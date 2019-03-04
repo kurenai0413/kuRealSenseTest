@@ -230,9 +230,13 @@ void CkuRealSenseTestDlg::RSThreadFun()
 
 	rs2_stream		align_to = FindStreamToAlign(m_RSProfile.get_streams());
 	rs2::align		align(align_to);
+
+	std::chrono::high_resolution_clock::time_point startT, endT;
 	
 	while (m_isRSStarted)
 	{
+		startT = std::chrono::high_resolution_clock::now();
+
 		m_RSFrames = m_RSPipeline.wait_for_frames();
 		auto processed = align.process(m_RSFrames);
 
@@ -251,6 +255,19 @@ void CkuRealSenseTestDlg::RSThreadFun()
 
 		//cv::imshow("ColorView", colorImg);
 		//cv::imshow("DepthView", alignedDepthImg);
+		
+		endT = std::chrono::high_resolution_clock::now();
+		auto diffT = std::chrono::duration_cast<std::chrono::milliseconds>(endT - startT);
+		
+		double m_FPS = 1000.0f / (float)diffT.count();
+		std::cout << (float)diffT.count() << std::endl;
+
+		std::string fpsString = std::to_string(m_FPS);
+		int baseline;
+		cv::Size fpsTextSize = cv::getTextSize(fpsString, cv::FONT_HERSHEY_COMPLEX, 1, 2, &baseline);
+		cv::putText(colorImg, fpsString, cv::Point(colorImg.cols - fpsTextSize.width, fpsTextSize.height),
+			CV_FONT_HERSHEY_SIMPLEX, 1, CV_RGB(0, 255, 0), 2, CV_AA);
+
 		cv::imshow("ColorView", colorImg);
 		cv::imshow("DepthView", depthImg);
 		cv::waitKey(1);
