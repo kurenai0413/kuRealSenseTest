@@ -24,6 +24,8 @@ public:
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
+	enum					TestMode { Accuracy, FrameFillRate, STDEV, TemporalNoise };
+
 	rs2::pipeline			m_RSPipeline;
 	rs2::pipeline_profile	m_RSProfile;
 	rs2::config				m_RSConfig;
@@ -38,10 +40,19 @@ public:
 
 	bool					m_isRSStarted;
 
+	TestMode				m_SelectedMode;
+
+	cv::Point				m_CenterPoint;
+	cv::Point				m_LTPoint;
+	cv::Point				m_LBPoint;
+	cv::Point				m_RTPoint;
+	cv::Point				m_RBPoint;
+
 	rs2_stream				FindStreamToAlign(const std::vector<rs2::stream_profile> & streams);
 	void					RSThreadFun();
 	float					GetDepthScale(rs2::device dev);
 
+	CComboBox				m_ModeSelectionComboBox;
 
 // Implementation
 protected:
@@ -56,4 +67,6 @@ protected:
 public:
 	afx_msg void OnBnClickedStartrs();
 	afx_msg void OnDestroy();
+	afx_msg void OnBnClickedStoprs();
+	afx_msg void OnCbnSelchangeExampercentage();
 };

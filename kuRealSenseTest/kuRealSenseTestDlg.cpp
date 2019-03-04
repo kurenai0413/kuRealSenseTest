@@ -16,6 +16,8 @@
 #define RS_DEPTH_WIDTH  640
 #define RS_DEPTH_HEIGHT 480
 
+#define testROISize		31
+
 // CAboutDlg dialog used for App About
 
 class CAboutDlg : public CDialogEx
@@ -62,6 +64,8 @@ CkuRealSenseTestDlg::CkuRealSenseTestDlg(CWnd* pParent /*=nullptr*/)
 void CkuRealSenseTestDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+
+	DDX_Control(pDX, IDC_ModeSelection, m_ModeSelectionComboBox);
 }
 
 BEGIN_MESSAGE_MAP(CkuRealSenseTestDlg, CDialogEx)
@@ -70,6 +74,8 @@ BEGIN_MESSAGE_MAP(CkuRealSenseTestDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_StartRS, &CkuRealSenseTestDlg::OnBnClickedStartrs)
 	ON_WM_DESTROY()
+	ON_BN_CLICKED(IDC_StopRS, &CkuRealSenseTestDlg::OnBnClickedStoprs)
+	ON_CBN_SELCHANGE(IDC_ExamPercentage, &CkuRealSenseTestDlg::OnCbnSelchangeExampercentage)
 END_MESSAGE_MAP()
 
 
@@ -122,6 +128,13 @@ BOOL CkuRealSenseTestDlg::OnInitDialog()
 	HWND hDepthParent = ::GetParent(hWndDepth);
 	::SetParent(hWndDepth, GetDlgItem(IDC_DepthView)->m_hWnd);
 	::ShowWindow(hDepthParent, SW_HIDE);
+
+	m_ModeSelectionComboBox.InsertString(Accuracy, L"Accuracy");
+	m_ModeSelectionComboBox.InsertString(FrameFillRate, L"Frame Fill Rate");
+	m_ModeSelectionComboBox.InsertString(STDEV, L"STDEV");
+	m_ModeSelectionComboBox.InsertString(TemporalNoise, L"Temporal Noise");
+	m_ModeSelectionComboBox.SetCurSel(Accuracy);
+	m_SelectedMode = (TestMode)m_ModeSelectionComboBox.GetCurSel();
 
 	m_isRSStarted = false;
 
@@ -183,6 +196,8 @@ void CkuRealSenseTestDlg::OnBnClickedStartrs()
 	m_RSConfig.enable_stream(RS2_STREAM_COLOR, RS_COLOR_WIDTH, RS_COLOR_HEIGHT, RS2_FORMAT_BGR8, 30);
 	m_RSConfig.enable_stream(RS2_STREAM_DEPTH, RS_DEPTH_WIDTH, RS_DEPTH_HEIGHT, RS2_FORMAT_Z16, 30);
 	m_RSProfile = m_RSPipeline.start(m_RSConfig);
+
+	m_CenterPoint = cv::Point(0.5 * RS_DEPTH_WIDTH, 0.5 * RS_DEPTH_HEIGHT);
 
 	m_DepthScale = GetDepthScale(m_RSProfile.get_device());
 	
@@ -256,17 +271,40 @@ void CkuRealSenseTestDlg::RSThreadFun()
 		//cv::imshow("ColorView", colorImg);
 		//cv::imshow("DepthView", alignedDepthImg);
 		
+		cv::Rect testROI;
+
+		#pragma region // Testing items //
+		switch (m_SelectedMode)
+		{
+		case TestMode::Accuracy:
+			testROI = cv::Rect(m_CenterPoint.x - 0.5 * testROISize, m_CenterPoint.y - 0.5 * testROISize, testROISize, testROISize);
+			cv::rectangle(depthImg, testROI,CV_RGB(0, 255, 0), 2, CV_AA);
+			break;
+		case TestMode::FrameFillRate:
+				
+			break;
+		case TestMode::STDEV:
+			
+			break;
+		case TestMode::TemporalNoise:
+			
+			break;
+		default:
+			break;
+		}
+		#pragma endregion
+
 		endT = std::chrono::high_resolution_clock::now();
 		auto diffT = std::chrono::duration_cast<std::chrono::milliseconds>(endT - startT);
 		
 		double m_FPS = 1000.0f / (float)diffT.count();
-		std::cout << (float)diffT.count() << std::endl;
+		//std::cout << (float)diffT.count() << std::endl;
 
 		std::string fpsString = std::to_string(m_FPS);
 		int baseline;
 		cv::Size fpsTextSize = cv::getTextSize(fpsString, cv::FONT_HERSHEY_COMPLEX, 1, 2, &baseline);
 		cv::putText(colorImg, fpsString, cv::Point(colorImg.cols - fpsTextSize.width, fpsTextSize.height),
-			CV_FONT_HERSHEY_SIMPLEX, 1, CV_RGB(0, 255, 0), 2, CV_AA);
+					CV_FONT_HERSHEY_SIMPLEX, 1, CV_RGB(0, 255, 0), 2, CV_AA);
 
 		cv::imshow("ColorView", colorImg);
 		cv::imshow("DepthView", depthImg);
@@ -285,7 +323,6 @@ float CkuRealSenseTestDlg::GetDepthScale(rs2::device dev)
 			return dpt.get_depth_scale();
 		}
 	}
-	//return 0.0f;
 }
 
 void CkuRealSenseTestDlg::OnDestroy()
@@ -302,4 +339,17 @@ void CkuRealSenseTestDlg::OnDestroy()
 
 		m_RSPipeline.stop();
 	}
+}
+
+void CkuRealSenseTestDlg::OnBnClickedStoprs()
+{
+	// TODO: Add your control notification handler code here
+
+}
+
+
+void CkuRealSenseTestDlg::OnCbnSelchangeExampercentage()
+{
+	// TODO: Add your control notification handler code here
+	m_SelectedMode = (TestMode)m_ModeSelectionComboBox.GetCurSel();
 }
