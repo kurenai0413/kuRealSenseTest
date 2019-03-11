@@ -259,3 +259,6 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+/kuRealSenseTest/ROI3DPoints_500.000000m.txt
+/kuRealSenseTest/ROI3DPoints_310.000000m.txt
+/kuRealSenseTest/ROI3DPoints_0.000000m.txt
